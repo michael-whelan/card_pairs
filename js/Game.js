@@ -5,6 +5,8 @@ function Game (){
 	this.cardHolder = [];
 	this.xinit =100;
 	this.yinit =50;
+	var that = this;
+	this.flipped = [];
 }
 
 Game.prototype.initWorld = function(){
@@ -62,17 +64,57 @@ Game.prototype.initCanvas=function () {
 	//set canvas to size of the screen.
 	canvas.width = window.innerWidth -20; 
 	canvas.height = window.innerHeight - 200;
-	canvas.addEventListener("mousedown",mouseClick,false);
+	canvas.addEventListener("mousedown",updateTouch,false);
 }
 
-function mouseClick(e){ 
-	console.log(e.clientX, e.clientY);
-
+function updateTouch(e){ 
+	if(game.flipped.length <2){
+		for(var i = 0; i < game.cardHolder.length; ++i){
+			var card = game.cardHolder[i];
+			if(e.clientX > card.x && e.clientX < card.x+card.width){
+				if(e.clientY > card.y && e.clientY < card.y+card.height){
+					card.flip = true;
+					game.flipped.push(card);
+					if(game.flipped.length ==2){
+						if(card.type == game.flipped[0].type){
+							game.updateScore();
+						}
+					}
+				}
+			}
+		}
+	}
 } 
 
 
-Game.prototype.update = function(){
 
+Game.prototype.updateScore = function(){
+	for(var i = 0; i < this.flipped.length; ++i){
+		var card = this.flipped[i];
+		this.cardHolder.splice(card.index,1);
+	}
+	this.flipped = [];
+}
+
+
+
+var countdown = 200;
+Game.prototype.update = function(){
+	var startTimer;
+	if(this.flipped.length > 1){
+		startTimer = true;
+	}
+	if(startTimer){
+		--countdown;
+	}
+	if(countdown< 0){
+		countdown = 200;
+		startTimer=false;
+		while(this.flipped.length > 0){
+			this.flipped[0].flip = false;
+			this.flipped.shift();
+		} 
+	}
 }
 
 
@@ -86,6 +128,7 @@ Game.prototype.gameLoop = function (){
 }
 
 Game.prototype.draw =function (){
+	ctx.clearRect(0,0,canvas.width,canvas.height);
 
 	ctx.font = 'italic 40pt Calibri';
 	ctx.textBaseline = "top";
