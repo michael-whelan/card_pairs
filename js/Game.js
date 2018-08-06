@@ -2,13 +2,21 @@ var canvas, ctx;
 
 
 function Game (){
-	this.cardHolder = [];
-	this.xinit =100;
-	this.yinit =50;
-	var that = this;
-	this.flipped = [];
+	this.winnings = 0;
+	this.reset()
 }
 
+Game.prototype.reset = function(){
+	this.state = "start";
+	this.betval = 0;
+	this.cardHolder = [];
+	this.xinit =100;
+	this.yinit = 100;
+	var that = this;
+	this.flipped = [];
+	this.timer =120;
+	this.endMessage = "";
+}
 Game.prototype.initWorld = function(){
 	var numCards = 24;
 	var across=8;
@@ -21,15 +29,37 @@ Game.prototype.initWorld = function(){
 		for(var j = 0; j < across; ++j){
 			var card = new Card(x,y,count,selCards[count]);
 			this.cardHolder.push(card);
-			//x = (j+2)*50)+10;
 			x = (j+1)*60+this.xinit;
 			++count;
 		}
 		x = this.xinit;
-		y = (i+1)*95+50; 		
+		y = (i+1)*95+this.yinit; 		
 	}
-	console.log(this.cardHolder);
+
+	this.startTimer();
 }
+
+
+
+Game.prototype.initCanvas=function () { 
+	canvas = document.createElement('canvas'); 
+	ctx = canvas.getContext('2d'); 
+	document.body.appendChild(canvas);
+	//set canvas to size of the screen.
+	canvas.width = 900; 
+	canvas.height = 500;
+	canvas.addEventListener("mousedown",updateTouch,false);
+}
+
+Game.prototype.startTimer = function() {
+	setInterval(function () {
+		if(game.timer > 0){
+			--game.timer;
+		}
+			
+    }, 1000);
+}
+
 
 Game.prototype.fillCards=function(numCards){
 	var suits = new Array("H", "C", "S", "D");
@@ -74,16 +104,6 @@ Game.prototype.shuffle=function (a) {
 }
 
 
-Game.prototype.initCanvas=function () { 
-	canvas = document.createElement('canvas'); 
-	ctx = canvas.getContext('2d'); 
-	document.body.appendChild(canvas);
-	//set canvas to size of the screen.
-	canvas.width = window.innerWidth -20; 
-	canvas.height = window.innerHeight - 200;
-	canvas.addEventListener("mousedown",updateTouch,false);
-}
-
 function updateTouch(e){ 
 	if(game.flipped.length <2){
 		for(var i = 0; i < game.cardHolder.length; ++i){
@@ -91,7 +111,10 @@ function updateTouch(e){
 			if(e.clientX > card.x && e.clientX < card.x+card.width){
 				if(e.clientY > card.y && e.clientY < card.y+card.height){
 					card.flip = true;
-					game.flipped.push(card);
+					if(!(game.flipped.indexOf(card) > -1)){
+						game.flipped.push(card);
+					}
+
 					if(game.flipped.length ==2){
 						if(card.type == game.flipped[0].type){
 							game.updateScore();
@@ -115,23 +138,70 @@ Game.prototype.updateScore = function(){
 }
 
 
+Game.prototype.doWin= function(){
+	this.state="end";
+	this.endMessage = "Well done you have won "+this.betval*2;
+	this.winnings += this.betval*2;
+}
 
-var countdown = 80;
+
+
+
+
+var countdown = 50;
 Game.prototype.update = function(){
-	var startTimer;
-	if(this.flipped.length > 1){
-		startTimer = true;
+	if(this.state == "game"){
+		var flipTimer;
+		if(this.flipped.length > 1){
+			flipTimer = true;
+		}
+		if(flipTimer){
+			--countdown;
+		}
+		if(countdown< 0){
+			countdown = 50;
+			flipTimer=false;
+			while(this.flipped.length > 0){
+				this.flipped[0].flip = false;
+				this.flipped.shift();
+			} 
+		}
+
+		if(this.cardHolder.length <=0){
+			this.doWin();
+		}
+		else if(this.timer <=0){
+			this.state="end";
+			this.endMessage = "You lose. Yopu are out of time";
+		}
+
+
+
+		//remove
+		if(KeyController.isKeyDown(Key.SPACE)){
+			this.doWin();
+		}
+
 	}
-	if(startTimer){
-		--countdown;
+	else if(this.state == "start"){
+		if(KeyController.isKeyDown(Key.UP)){
+			++this.betval;
+		}
+		else if (KeyController.isKeyDown(Key.DOWN) && this.betval > 0){
+			--this.betval;	
+		}
+
+
+		if(this.betval > 0 && KeyController.isKeyDown(Key.ENTER)){
+			this.state = "game";
+			this.initWorld();
+			this.winnings -= this.betval
+		}
 	}
-	if(countdown< 0){
-		countdown = 80;
-		startTimer=false;
-		while(this.flipped.length > 0){
-			this.flipped[0].flip = false;
-			this.flipped.shift();
-		} 
+	else if(this.state == "end"){
+		if(KeyController.isKeyDown(Key.ENTER)){
+			this.reset();
+		}
 	}
 }
 
@@ -149,11 +219,31 @@ Game.prototype.draw =function (){
 	ctx.clearRect(0,0,canvas.width,canvas.height);
 	ctx.font = 'italic 40pt Calibri';
 	ctx.textBaseline = "top";
-	ctx.fillStyle=rgb(255,0,0);
 	ctx.lineWidth = 4;
 	ctx.strokeRect(10,10,800,400);
-	for(var i =0; i < this.cardHolder.length; ++i){
-		this.cardHolder[i].draw(ctx);
+	if(this.winnings > -1){
+		ctx.fillStyle=rgb(0,0,0);
+	}else{
+		ctx.fillStyle=rgb(255,0,0);
+	}
+	ctx.fillText("Winnings: "+ this.winnings,690,100, 110,20);
+	if(this.state == "game"){
+		ctx.fillStyle=rgb(0,0,0);
+		ctx.fillText(this.timer,770,20, 30,20);
+		ctx.fillText("Bet: "+ this.betval,750,60, 50,20);
+		for(var i =0; i < this.cardHolder.length; ++i){
+			this.cardHolder[i].draw(ctx);
+		}
+	}
+	else if(this.state == "start"){
+		ctx.fillStyle=rgb(0,0,0);
+		ctx.fillText("Select a bet and press enter",250,200, 250,20);
+		ctx.fillText("Bet: "+ this.betval,250,240, 50,20);
+	}
+	else if(this.state == "end"){
+		ctx.fillStyle=rgb(0,0,0);
+		ctx.fillText(this.endMessage,250,200, 250,20);
+		ctx.fillText("Press Enter to play again",250,260, 250,20);
 	}
 }
 

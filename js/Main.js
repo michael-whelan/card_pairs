@@ -11,9 +11,7 @@ function main()
 	
 	//ctx the drawing context, which lets you draw onto the canvas
 	//Most people call it ctx for short	
-	ctx.clearRect(0,0,canvas.width, canvas.height);
-
-	game.initWorld();		
+	ctx.clearRect(0,0,canvas.width, canvas.height);	
 		
 	//start game loop
 	game.gameLoop();
