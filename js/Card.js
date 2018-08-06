@@ -5,7 +5,6 @@ var Card = function(x,y,index,type){
 	this.width = 50;
 	this.height = 85;
 	this.flip = false;
-	this.index =index;
 }
 
 

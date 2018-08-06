@@ -10,8 +10,8 @@ function Game (){
 }
 
 Game.prototype.initWorld = function(){
-	var numCards = 21;
-	var across=7;
+	var numCards = 24;
+	var across=8;
 	var down=3;
 	var count=0;
 	var selCards = this.fillCards(numCards);
@@ -43,17 +43,34 @@ Game.prototype.fillCards=function(numCards){
 	}
 
 	var selectCards = [];
-	for(var i =0; i < numCards; ++i){
-		var card =  Math.floor(Math.random() * (52 - 1) ) + 1;
-		selectCards.push(cards[card]);
+	for(var i =0; i < numCards/2; ++i){
+		var ret = this.getRandCard(cards);
+		var card = ret[0];
+		selectCards.push(card);
+		selectCards.push(card);
+
+		cards.splice(ret[1],1);
 	}
-	return selectCards;
+
+	return this.shuffle(selectCards);
 }
 
 
-Game.prototype.getRandCard=function () {
-	var card =  Math.floor(Math.random() * (52 - 1) ) + 1;
-	return this.cards[card];
+Game.prototype.getRandCard=function (selection) {
+	var card =  Math.floor(Math.random() * (selection.length - 1) ) + 1;
+	return [selection[card],card];
+}
+
+
+Game.prototype.shuffle=function (a) {
+	 var j, x, i;
+    for (i = a.length - 1; i > 0; i--) {
+        j = Math.floor(Math.random() * (i + 1));
+        x = a[i];
+        a[i] = a[j];
+        a[j] = x;
+    }
+    return a;
 }
 
 
@@ -91,14 +108,15 @@ function updateTouch(e){
 Game.prototype.updateScore = function(){
 	for(var i = 0; i < this.flipped.length; ++i){
 		var card = this.flipped[i];
-		this.cardHolder.splice(card.index,1);
+		console.log(card);
+		this.cardHolder.splice(this.cardHolder.indexOf(card),1);
 	}
 	this.flipped = [];
 }
 
 
 
-var countdown = 200;
+var countdown = 80;
 Game.prototype.update = function(){
 	var startTimer;
 	if(this.flipped.length > 1){
@@ -108,7 +126,7 @@ Game.prototype.update = function(){
 		--countdown;
 	}
 	if(countdown< 0){
-		countdown = 200;
+		countdown = 80;
 		startTimer=false;
 		while(this.flipped.length > 0){
 			this.flipped[0].flip = false;
@@ -129,19 +147,13 @@ Game.prototype.gameLoop = function (){
 
 Game.prototype.draw =function (){
 	ctx.clearRect(0,0,canvas.width,canvas.height);
-
 	ctx.font = 'italic 40pt Calibri';
 	ctx.textBaseline = "top";
-
 	ctx.fillStyle=rgb(255,0,0);
 	ctx.lineWidth = 4;
 	ctx.strokeRect(10,10,800,400);
 	for(var i =0; i < this.cardHolder.length; ++i){
 		this.cardHolder[i].draw(ctx);
 	}
-		//this.player.draw(ctx);	
-		//this.brickR[i].draw(ctx);
-
-
 }
 
