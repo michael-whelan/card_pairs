@@ -3,10 +3,12 @@ var canvas, ctx;
 
 function Game (){
 	this.winnings = 0;
+	this.sound = new Sound();
 	this.reset()
 }
 
 Game.prototype.reset = function(){
+	this.introMessage = "Select a bet and press enter";
 	this.state = "start";
 	this.betval = 0;
 	this.cardHolder = [];
@@ -17,6 +19,7 @@ Game.prototype.reset = function(){
 	this.timer =120;
 	this.endMessage = "";
 }
+
 Game.prototype.initWorld = function(){
 	var numCards = 24;
 	var across=8;
@@ -35,8 +38,7 @@ Game.prototype.initWorld = function(){
 		x = this.xinit;
 		y = (i+1)*95+this.yinit; 		
 	}
-
-	this.startTimer();
+	startTimer();
 }
 
 
@@ -51,13 +53,19 @@ Game.prototype.initCanvas=function () {
 	canvas.addEventListener("mousedown",updateTouch,false);
 }
 
-Game.prototype.startTimer = function() {
+//Game.prototype.startTimer =
+var timeStarted =false;
+ function startTimer () {
+	if(timeStarted){
+		return true;
+	}
 	setInterval(function () {
 		if(game.timer > 0){
 			--game.timer;
 		}
 			
     }, 1000);
+    timeStarted=true;
 }
 
 
@@ -129,6 +137,7 @@ function updateTouch(e){
 
 
 Game.prototype.updateScore = function(){
+	this.sound.playBoop();
 	for(var i = 0; i < this.flipped.length; ++i){
 		var card = this.flipped[i];
 		console.log(card);
@@ -140,8 +149,9 @@ Game.prototype.updateScore = function(){
 
 Game.prototype.doWin= function(){
 	this.state="end";
-	this.endMessage = "Well done you have won "+this.betval*2;
 	this.winnings += this.betval*2;
+	this.endMessage = "Well done!";
+	this.sound.playWin();
 }
 
 
@@ -191,11 +201,14 @@ Game.prototype.update = function(){
 			--this.betval;	
 		}
 
-
-		if(this.betval > 0 && KeyController.isKeyDown(Key.ENTER)){
-			this.state = "game";
-			this.initWorld();
-			this.winnings -= this.betval
+		if(KeyController.isKeyDown(Key.ENTER)){
+			if(this.betval > 0){
+				this.state = "game";
+				this.initWorld();
+				this.winnings -= this.betval
+			}else if(this.betval == 0){
+				this.introMessage = "You must choose a bet amount.";
+			}
 		}
 	}
 	else if(this.state == "end"){
@@ -226,23 +239,23 @@ Game.prototype.draw =function (){
 	}else{
 		ctx.fillStyle=rgb(255,0,0);
 	}
-	ctx.fillText("Winnings: "+ this.winnings,690,100, 110,20);
+	ctx.fillText("Winnings: "+ this.winnings,690-(13*this.winnings.toString().length),100, 110+(13*this.winnings.toString().length),20);
 	if(this.state == "game"){
 		ctx.fillStyle=rgb(0,0,0);
 		ctx.fillText(this.timer,770,20, 30,20);
-		ctx.fillText("Bet: "+ this.betval,750,60, 50,20);
+		ctx.fillText("Bet: "+ this.betval,750-(13*this.betval.toString().length),60, 50+(13*this.betval.toString().length),20);
 		for(var i =0; i < this.cardHolder.length; ++i){
 			this.cardHolder[i].draw(ctx);
 		}
 	}
 	else if(this.state == "start"){
 		ctx.fillStyle=rgb(0,0,0);
-		ctx.fillText("Select a bet and press enter",250,200, 250,20);
-		ctx.fillText("Bet: "+ this.betval,250,240, 50,20);
+		ctx.fillText(this.introMessage,250,200, 250,20);
+		ctx.fillText("Bet: "+ this.betval,250-(13*this.betval.toString().length),240, 50+(13*this.betval.toString().length),20);
 	}
 	else if(this.state == "end"){
 		ctx.fillStyle=rgb(0,0,0);
-		ctx.fillText(this.endMessage,250,200, 250,20);
+		ctx.fillText(this.endMessage,250,200, 150,20);
 		ctx.fillText("Press Enter to play again",250,260, 250,20);
 	}
 }
